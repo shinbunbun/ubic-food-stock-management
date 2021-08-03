@@ -1,0 +1,43 @@
+
+service: ubic-food-stock-management
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  lambdaHashingVersion: 20201221
+  stage: ${opt:stage}
+  region: ap-northeast-1
+  environment: ${file(.env)}
+
+resources:
+      Resources:
+        Bucket:
+          Type: AWS::S3::Bucket
+          Properties:
+            # バケット名
+            BucketName: ubic-food-stock-management
+        UBICFOOD:
+          Type: AWS::DynamoDB::Table
+          Properties:
+            TableName: UBIC-FOOD
+            AttributeDefinitions:
+              - AttributeName: ID
+                AttributeType: S
+              - AttributeName: DataType
+                AttributeType: S
+            KeySchema:
+              - AttributeName: ID
+                KeyType: HASH
+              - AttributeName: DataType
+                KeyType: RANGE
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+
+functions:
+  bot:
+    handler: bot/handler.index
+    events:
+      - http: POST bot
+    environment: ${self:provider.environment}
