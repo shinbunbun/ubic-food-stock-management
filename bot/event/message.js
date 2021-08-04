@@ -1,5 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 const AWS = require('aws-sdk');
+// eslint-disable-next-line import/no-unresolved
+const { v4: uuidv4 } = require('uuid');
 
 const dynamoDocument = new AWS.DynamoDB.DocumentClient();
 
@@ -99,7 +101,7 @@ const textEvent = async (event) => {
                     action: {
                       type: 'message',
                       label: '借りる',
-                      text: foodIds[i],
+                      text: `rent:${foodIds[i]}`,
                     },
                     style: 'primary',
                     offsetBottom: '10px',
@@ -121,6 +123,57 @@ const textEvent = async (event) => {
     }
     // 上で条件分岐した以外のメッセージが送られてきた時
     default: {
+      const userMessage = event.message.text;
+      if (userMessage.substr(0, 5) === 'rent:') {
+        const transactionId = uuidv4();
+        console.log(transactionId);
+        const date = new Date();
+        console.log(date);
+        const params = {
+          RequestItems: {
+            'UBIC-FOOD': [{
+              PutRequest: {
+                Item: {
+                  ID: transactionId,
+                  DataType: 'transaction-user',
+                  Data: event.source.userId,
+                  DataKind: 'transaction',
+                },
+              },
+            }, {
+              PutRequest: {
+                Item: {
+                  ID: transactionId,
+                  DataType: 'transaction-food',
+                  Data: userMessage.substr(5),
+                  DataKind: 'transaction',
+                },
+              },
+            }, {
+              PutRequest: {
+                Item: {
+                  ID: transactionId,
+                  DataType: 'transaction-date',
+                  Data: date.getTime(),
+                  DataKind: 'transaction',
+                },
+              },
+            }],
+          },
+        };
+        await dynamoDocument.batchWrite(params, (e) => {
+          if (e) {
+            console.log(e);
+          }
+        }).promise();
+        let deadLine = date.getTime() + 259200000;
+        deadLine = new Date(deadLine);
+        message = {
+          type: 'text',
+          text: `貸し出し完了しました。返却期限は${deadLine.getMonth() + 1}/${deadLine.getDate()}です`,
+        };
+        return message;
+      }
       // 返信するメッセージを作成
       message = {
         type: 'text',
