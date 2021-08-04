@@ -408,6 +408,110 @@ const textEvent = async (event) => {
         return message;
       }
 
+      const userContextQueryParam = {
+        TableName: 'UBIC-FOOD',
+        ExpressionAttributeNames: {
+          '#i': 'ID',
+          '#d': 'DataType',
+        },
+        ExpressionAttributeValues: {
+          ':id': event.source.userId,
+          ':DataType': 'user-context',
+        },
+        KeyConditionExpression: '#i = :id AND #d = :DataType',
+      };
+      const userContextQueryRes = await new Promise((resolve, reject) => {
+        dynamoDocument.query(userContextQueryParam, (err, data) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
+        });
+      });
+      console.log(userContextQueryRes.Items);
+      if (userContextQueryRes.Items !== []) {
+        const context = userContextQueryRes.Items[0].Data;
+        switch (context) {
+          case 'foodTitleMode': {
+            const foodId = uuidv4();
+            const putFoodParam = {
+              RequestItems: {
+                'UBIC-FOOD': [{
+                  PutRequest: {
+                    Item: {
+                      ID: foodId,
+                      DataType: 'food-name',
+                      Data: event.message.text,
+                      DataKind: 'food',
+                    },
+                  },
+                }, {
+                  PutRequest: {
+                    Item: {
+                      ID: foodId,
+                      DataType: 'food-maker',
+                      Data: '不明',
+                      DataKind: 'food',
+                    },
+                  },
+                }, {
+                  PutRequest: {
+                    Item: {
+                      ID: foodId,
+                      DataType: 'food-image',
+                      Data: 'https://ubic-food-stock-management.s3.ap-northeast-1.amazonaws.com/bbc366b61cd386e32143ebafbc3f49ec.png',
+                      DataKind: 'food',
+                    },
+                  },
+                }],
+              },
+            };
+            await new Promise((resolve, reject) => {
+              dynamoDocument.put(putFoodParam, (err, data) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(data);
+                }
+              });
+            });
+            const userContextUpdateParam = {
+              TableName: 'UBIC-FOOD',
+              Key: { // 更新したい項目をプライマリキー(及びソートキー)によって１つ指定
+                ID: event.source.userId,
+                DataType: 'user-context',
+              },
+              ExpressionAttributeNames: {
+                '#d': 'Data',
+                '#k': 'DataKind',
+              },
+              ExpressionAttributeValues: {
+                ':Data': 'foodImageMode',
+                ':DataKind': 'user',
+              },
+              UpdateExpression: 'SET #d = :Data, #k = :DataKind',
+            };
+            await new Promise((resolve, reject) => {
+              dynamoDocument.update(userContextUpdateParam, (err, data) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(data);
+                }
+              });
+            });
+            message = {
+              type: 'text',
+              text: `「${event.message.text}」を追加しました。続いて商品のメーカーを教えてください。`,
+            };
+            return message;
+          }
+          default:
+            break;
+        }
+      }
+
       message = {
         type: 'text',
         text: `受け取ったメッセージ: ${event.message.text}\nそのメッセージの返信には対応してません...`,
