@@ -656,6 +656,29 @@ const imageEvent = async (event) => {
         }
       });
     });
+    const foodImageUpdateParam = {
+      TableName: 'UBIC-FOOD',
+      Key: { // 更新したい項目をプライマリキー(及びソートキー)によって１つ指定
+        ID: foodId,
+        DataType: 'food-image',
+      },
+      ExpressionAttributeNames: {
+        '#d': 'Data',
+      },
+      ExpressionAttributeValues: {
+        ':Data': `https://ubic-food-stock-management.s3.ap-northeast-1.amazonaws.com/${foodId}.jpeg`,
+      },
+      UpdateExpression: 'SET #d = :Data',
+    };
+    await new Promise((resolve, reject) => {
+      dynamoDocument.update(foodImageUpdateParam, (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    });
     const userContextDeleteParam = {
       TableName: 'UBIC-FOOD',
       Key: {
