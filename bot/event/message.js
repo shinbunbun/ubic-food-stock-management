@@ -507,6 +507,68 @@ const textEvent = async (event) => {
             };
             return message;
           }
+          case 'foodMakerMode': {
+            const dataKind = userContextQueryRes.Items[0].DataKind.split('&');
+            let foodId;
+            dataKind.forEach((dataKindItem) => {
+              if (dataKindItem.match(/foodId/)) {
+                [, foodId] = dataKindItem.split('=');
+              }
+            });
+            console.log(foodId);
+            const foodUpdateParam = {
+              TableName: 'UBIC-FOOD',
+              Key: { // 更新したい項目をプライマリキー(及びソートキー)によって１つ指定
+                ID: foodId,
+                DataType: 'food-maker',
+              },
+              ExpressionAttributeNames: {
+                '#d': 'Data',
+              },
+              ExpressionAttributeValues: {
+                ':Data': event.message.text,
+              },
+              UpdateExpression: 'SET #d = :Data',
+            };
+            await new Promise((resolve, reject) => {
+              dynamoDocument.update(foodUpdateParam, (err, data) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(data);
+                }
+              });
+            });
+
+            const userContextUpdateParam = {
+              TableName: 'UBIC-FOOD',
+              Key: { // 更新したい項目をプライマリキー(及びソートキー)によって１つ指定
+                ID: event.source.userId,
+                DataType: 'user-context',
+              },
+              ExpressionAttributeNames: {
+                '#d': 'Data',
+              },
+              ExpressionAttributeValues: {
+                ':Data': 'foodImageMode',
+              },
+              UpdateExpression: 'SET #d = :Data',
+            };
+            await new Promise((resolve, reject) => {
+              dynamoDocument.update(userContextUpdateParam, (err, data) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(data);
+                }
+              });
+            });
+            message = {
+              type: 'text',
+              text: 'メーカーの登録が完了しました。続いて食材の画像を送信してください。',
+            };
+            return message;
+          }
           default:
             break;
         }
