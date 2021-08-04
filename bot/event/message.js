@@ -126,9 +126,9 @@ const textEvent = async (event) => {
       const userMessage = event.message.text;
       if (userMessage.substr(0, 5) === 'rent:') {
         const transactionId = uuidv4();
-        console.log(transactionId);
+        /* console.log(transactionId); */
         const date = new Date();
-        console.log(date);
+        /* console.log(date); */
         const params = {
           RequestItems: {
             'UBIC-FOOD': [{
