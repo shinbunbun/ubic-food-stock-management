@@ -52,7 +52,11 @@ const textEvent = async (event) => {
           foods[foodItem.ID] = {};
           foodIds.push(foodItem.ID);
         }
-        foods[foodItem.ID][foodItem.DataType] = foodItem.Data;
+        if (foodItem.IntData) {
+          foods[foodItem.ID][foodItem.DataType] = foodItem.IntData;
+        } else {
+          foods[foodItem.ID][foodItem.DataType] = foodItem.Data;
+        }
       }
       message = {
         type: 'flex',
@@ -99,6 +103,12 @@ const textEvent = async (event) => {
                 type: 'box',
                 layout: 'vertical',
                 contents: [
+                  {
+                    type: 'text',
+                    text: `在庫: ${foods[foodIds[i]]['food-stock']}個`,
+                    offsetBottom: '15px',
+                    align: 'center',
+                  },
                   {
                     type: 'button',
                     action: {
@@ -247,6 +257,12 @@ const textEvent = async (event) => {
                 layout: 'vertical',
                 contents: [
                   {
+                    type: 'text',
+                    text: '在庫: n個',
+                    offsetBottom: '15px',
+                    align: 'center',
+                  },
+                  {
                     type: 'button',
                     action: {
                       type: 'message',
@@ -277,6 +293,8 @@ const textEvent = async (event) => {
               .text = foodItemsQueryRes[i].Items[j].Data;
           } else if (foodItemsQueryRes[i].Items[j].DataType === 'food-image') {
             message[1].contents.contents[i].hero.url = foodItemsQueryRes[i].Items[j].Data;
+          } else if (foodItemsQueryRes[i].Items[j].DataType === 'food-stock') {
+            message[1].contents.contents[i].body.contents[3].contents[0].text = `在庫: ${foodItemsQueryRes[i].Items[j].IntData}個`;
           }
         }
       }
@@ -355,11 +373,36 @@ const textEvent = async (event) => {
             }],
           },
         };
+
         await dynamoDocument.batchWrite(params, (e) => {
           if (e) {
             console.log(e);
           }
         }).promise();
+
+        const stockCountUpdateParam = {
+          TableName: 'UBIC-FOOD',
+          Key: {
+            ID: userMessage.substr(5),
+            DataType: 'food-stock',
+          },
+          ExpressionAttributeNames: {
+            '#d': 'IntData',
+          },
+          ExpressionAttributeValues: {
+            ':IntData': 1,
+          },
+          UpdateExpression: 'SET #d = #d - :IntData',
+        };
+        await new Promise((resolve, reject) => {
+          dynamoDocument.update(stockCountUpdateParam, (err, data) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(data);
+            }
+          });
+        });
         let deadLine = date.getTime() + 259200000;
         deadLine = new Date(deadLine);
         message = {
@@ -433,7 +476,7 @@ const textEvent = async (event) => {
         });
       });
       console.log(userContextQueryRes.Items);
-      if (userContextQueryRes.Items !== []) {
+      if (userContextQueryRes.Items[0]) {
         const context = userContextQueryRes.Items[0].Data;
         switch (context) {
           case 'foodTitleMode': {
@@ -464,6 +507,15 @@ const textEvent = async (event) => {
                       ID: foodId,
                       DataType: 'food-image',
                       Data: 'https://ubic-food-stock-management.s3.ap-northeast-1.amazonaws.com/bbc366b61cd386e32143ebafbc3f49ec.png',
+                      DataKind: 'food',
+                    },
+                  },
+                }, {
+                  PutRequest: {
+                    Item: {
+                      ID: foodId,
+                      DataType: 'food-stock',
+                      IntData: 0,
                       DataKind: 'food',
                     },
                   },
