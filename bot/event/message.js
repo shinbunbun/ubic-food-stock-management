@@ -51,7 +51,7 @@ const textEvent = async (event) => {
       }
       message = {
         type: 'flex',
-        altText: 'Flex Message',
+        altText: '借りる食材を選んでください',
         contents: {
           type: 'carousel',
           contents: [],
@@ -99,7 +99,7 @@ const textEvent = async (event) => {
                     action: {
                       type: 'message',
                       label: '借りる',
-                      text: `${foods[foodIds[i]]['food-id']}`,
+                      text: foodIds[i],
                     },
                     style: 'primary',
                     offsetBottom: '10px',
