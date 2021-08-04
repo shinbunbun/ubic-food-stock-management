@@ -468,7 +468,7 @@ const textEvent = async (event) => {
               },
             };
             await new Promise((resolve, reject) => {
-              dynamoDocument.put(putFoodParam, (err, data) => {
+              dynamoDocument.batchWrite(putFoodParam, (err, data) => {
                 if (err) {
                   reject(err);
                 } else {
