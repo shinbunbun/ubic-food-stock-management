@@ -279,6 +279,39 @@ const textEvent = async (event) => {
       }
       break;
     }
+    case '食料追加': {
+      const { userId } = event.source;
+      const updateParam = {
+        TableName: 'UBIC-FOOD',
+        Key: { // 更新したい項目をプライマリキー(及びソートキー)によって１つ指定
+          ID: userId,
+          DataType: 'user-context',
+        },
+        ExpressionAttributeNames: {
+          '#d': 'Data',
+          '#k': 'DataKind',
+        },
+        ExpressionAttributeValues: {
+          ':Data': 'foodTitleMode',
+          ':DataKind': 'user',
+        },
+        UpdateExpression: 'SET #d = :Data, #k = :DataKind',
+      };
+      await new Promise((resolve, reject) => {
+        dynamoDocument.update(updateParam, (err, data) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
+        });
+      });
+      message = {
+        type: 'text',
+        text: '追加する食料の商品名を送信してください',
+      };
+      break;
+    }
     // 上で条件分岐した以外のメッセージが送られてきた時
     default: {
       const userMessage = event.message.text;
