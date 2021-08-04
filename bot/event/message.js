@@ -331,8 +331,50 @@ const textEvent = async (event) => {
           text: `貸し出し完了しました。返却期限は${deadLine.getMonth() + 1}/${deadLine.getDate()}です`,
         };
         return message;
+      } if (userMessage.substr(0, 7) === 'return:') {
+        const transactionId = userMessage.substr(7);
+        const deleteParam = {
+          RequestItems: {
+            'UBIC-FOOD': [{
+              DeleteRequest: {
+                Key: {
+                  ID: transactionId,
+                  DataType: 'transaction-user',
+                },
+              },
+            }, {
+              DeleteRequest: {
+                Key: {
+                  ID: transactionId,
+                  DataType: 'transaction-food',
+                },
+              },
+            }, {
+              DeleteRequest: {
+                Key: {
+                  ID: transactionId,
+                  DataType: 'transaction-date',
+                },
+              },
+            }],
+          },
+        };
+        await new Promise((resolve, reject) => {
+          dynamoDocument.batchWrite(deleteParam, (err, data) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(data);
+            }
+          });
+        });
+        message = {
+          type: 'text',
+          text: '返却が完了しました',
+        };
+        return message;
       }
-      // 返信するメッセージを作成
+
       message = {
         type: 'text',
         text: `受け取ったメッセージ: ${event.message.text}\nそのメッセージの返信には対応してません...`,
