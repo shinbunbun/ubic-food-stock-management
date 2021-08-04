@@ -121,6 +121,164 @@ const textEvent = async (event) => {
       /* console.log(foods); */
       break;
     }
+    case '返却': {
+      message = [{
+        type: 'text',
+        text: '返却する商品を選んでください',
+      }, {
+        type: 'flex',
+        altText: '返却する商品を選んでください',
+        contents: {
+          type: 'carousel',
+          contents: [],
+        },
+      }];
+      const queryParam = {
+        TableName: 'UBIC-FOOD',
+        IndexName: 'Data-DataType-index',
+        KeyConditionExpression: '#k = :val AND #d = :DataType',
+        ExpressionAttributeValues: {
+          ':val': event.source.userId,
+          ':DataType': 'transaction-user',
+        },
+        ExpressionAttributeNames: {
+          '#k': 'Data',
+          '#d': 'DataType',
+        },
+      };
+      const transactionData = await new Promise((resolve, reject) => {
+        dynamoDocument.query(queryParam, (err, data) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
+        });
+      });
+      const foodIdsPromise = [];
+      for (let i = 0; i < transactionData.Items.length; i += 1) {
+        const transactionFoodQueryParam = {
+          TableName: 'UBIC-FOOD',
+          ExpressionAttributeNames: {
+            '#i': 'ID',
+            '#d': 'DataType',
+          },
+          ExpressionAttributeValues: {
+            ':id': transactionData.Items[i].ID,
+            ':DataType': 'transaction-food',
+          },
+          KeyConditionExpression: '#i = :id AND #d = :DataType',
+        };
+        foodIdsPromise.push(new Promise((resolve, reject) => {
+          dynamoDocument.query(transactionFoodQueryParam, (err, data) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(data);
+            }
+          });
+        }));
+      }
+      const foodIdsQueryRes = await Promise.all(foodIdsPromise);
+      console.log(foodIdsQueryRes[0].Items[0]);
+      const foodItemsPromise = [];
+      for (let i = 0; i < foodIdsQueryRes.length; i += 1) {
+        const foodId = foodIdsQueryRes[i].Items[0].Data;
+        console.log(foodId);
+        const foodQueryParam = {
+          TableName: 'UBIC-FOOD',
+          ExpressionAttributeNames: {
+            '#i': 'ID',
+          },
+          ExpressionAttributeValues: {
+            ':id': foodId,
+          },
+          KeyConditionExpression: '#i = :id',
+        };
+        foodItemsPromise.push(new Promise((resolve, reject) => {
+          dynamoDocument.query(foodQueryParam, (err, data) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(data);
+            }
+          });
+        }));
+      }
+      const foodItemsQueryRes = await Promise.all(foodItemsPromise);
+      for (let i = 0; i < foodItemsQueryRes.length; i += 1) {
+        message[1].contents.contents.push({
+          type: 'bubble',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [],
+          },
+          hero: {
+            type: 'image',
+            url: 'imageUrl',
+            size: 'xl',
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'text',
+                text: 'title',
+                size: 'xl',
+                weight: 'bold',
+                align: 'center',
+              },
+              {
+                type: 'text',
+                text: 'maker',
+                align: 'center',
+              },
+              {
+                type: 'separator',
+                margin: 'md',
+              },
+              {
+                type: 'box',
+                layout: 'vertical',
+                contents: [
+                  {
+                    type: 'button',
+                    action: {
+                      type: 'message',
+                      label: '返却',
+                      text: `return:${foodIdsQueryRes[i].Items[0].ID}`,
+                    },
+                    style: 'primary',
+                    offsetBottom: '10px',
+                  },
+                ],
+                paddingTop: '30px',
+              },
+            ],
+          },
+          styles: {
+            header: {
+              backgroundColor: '#008282',
+            },
+          },
+        });
+        for (let j = 0; j < foodItemsQueryRes[i].Items.length; j += 1) {
+          console.log(foodItemsQueryRes[i].Items[j].DataType);
+          if (foodItemsQueryRes[i].Items[j].DataType === 'food-name') {
+            message[1].contents.contents[i].body.contents[0]
+              .text = foodItemsQueryRes[i].Items[j].Data;
+          } else if (foodItemsQueryRes[i].Items[j].DataType === 'food-maker') {
+            message[1].contents.contents[i].body.contents[1]
+              .text = foodItemsQueryRes[i].Items[j].Data;
+          } else if (foodItemsQueryRes[i].Items[j].DataType === 'food-image') {
+            message[1].contents.contents[i].hero.url = foodItemsQueryRes[i].Items[j].Data;
+          }
+        }
+      }
+      break;
+    }
     // 上で条件分岐した以外のメッセージが送られてきた時
     default: {
       const userMessage = event.message.text;
@@ -154,7 +312,7 @@ const textEvent = async (event) => {
                 Item: {
                   ID: transactionId,
                   DataType: 'transaction-date',
-                  Data: date.getTime(),
+                  Data: date.getTime().toString(),
                   DataKind: 'transaction',
                 },
               },
