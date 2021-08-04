@@ -18,6 +18,12 @@
   },
   "homepage": "https://github.com/shinbunbun/ubic-food-stock-management#readme",
   "dependencies": {
+    "@line/bot-sdk": "^7.3.0",
     "serverless": "^2.52.1"
+  },
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.23.4"
   }
 }
