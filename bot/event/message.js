@@ -488,7 +488,7 @@ const textEvent = async (event) => {
               },
               ExpressionAttributeValues: {
                 ':Data': 'foodMakerMode',
-                ':DataKind': 'user',
+                ':DataKind': `user&foodId=${foodId}`,
               },
               UpdateExpression: 'SET #d = :Data, #k = :DataKind',
             };
