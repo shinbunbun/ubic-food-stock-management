@@ -82,7 +82,7 @@ const textEvent = async (event) => {
               {
                 type: 'text',
                 text: foods[foodIds[i]]['food-name'],
-                size: 'full',
+                size: 'xl',
                 weight: 'bold',
                 align: 'center',
               },
@@ -229,7 +229,7 @@ const textEvent = async (event) => {
               {
                 type: 'text',
                 text: 'title',
-                size: 'full',
+                size: 'xl',
                 weight: 'bold',
                 align: 'center',
               },
@@ -726,7 +726,7 @@ const imageEvent = async (event) => {
             {
               type: 'text',
               text: foodName,
-              size: 'full',
+              size: 'xl',
               weight: 'bold',
               align: 'center',
             },
