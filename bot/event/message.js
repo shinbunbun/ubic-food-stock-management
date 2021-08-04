@@ -1,3 +1,8 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
+const AWS = require('aws-sdk');
+
+const dynamoDocument = new AWS.DynamoDB.DocumentClient();
+
 // テキストメッセージの処理をする関数
 const textEvent = async (event) => {
   let message;
@@ -10,6 +15,108 @@ const textEvent = async (event) => {
         type: 'text',
         text: 'Hello, world',
       };
+      break;
+    }
+    case '借りる': {
+      const queryParam = {
+        TableName: 'UBIC-FOOD',
+        IndexName: 'DataKind-index',
+        KeyConditionExpression: '#k = :val',
+        ExpressionAttributeValues: {
+          ':val': 'food',
+        },
+        ExpressionAttributeNames: {
+          '#k': 'DataKind',
+        },
+      };
+      const foodData = await new Promise((resolve, reject) => {
+        dynamoDocument.query(queryParam, (err, data) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
+        });
+      });
+      const foodDataItems = foodData.Items;
+      const foods = {};
+      const foodIds = [];
+      for (let i = 0; i < foodDataItems.length; i += 1) {
+        const foodItem = foodDataItems[i];
+        if (!foods[foodItem.ID]) {
+          foods[foodItem.ID] = {};
+          foodIds.push(foodItem.ID);
+        }
+        foods[foodItem.ID][foodItem.DataType] = foodItem.Data;
+      }
+      message = {
+        type: 'flex',
+        altText: 'Flex Message',
+        contents: {
+          type: 'carousel',
+          contents: [],
+        },
+      };
+      for (let i = 0; i < foodIds.length; i += 1) {
+        message.contents.contents.push({
+          type: 'bubble',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [],
+          },
+          hero: {
+            type: 'image',
+            url: foods[foodIds[i]]['food-image'],
+            size: 'xl',
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'text',
+                text: foods[foodIds[i]]['food-name'],
+                size: 'xl',
+                weight: 'bold',
+                align: 'center',
+              },
+              {
+                type: 'text',
+                text: foods[foodIds[i]]['food-maker'],
+                align: 'center',
+              },
+              {
+                type: 'separator',
+                margin: 'md',
+              },
+              {
+                type: 'box',
+                layout: 'vertical',
+                contents: [
+                  {
+                    type: 'button',
+                    action: {
+                      type: 'message',
+                      label: '借りる',
+                      text: `${foods[foodIds[i]]['food-id']}`,
+                    },
+                    style: 'primary',
+                    offsetBottom: '10px',
+                  },
+                ],
+                paddingTop: '30px',
+              },
+            ],
+          },
+          styles: {
+            header: {
+              backgroundColor: '#008282',
+            },
+          },
+        });
+      }
+      /* console.log(foods); */
       break;
     }
     // 上で条件分岐した以外のメッセージが送られてきた時

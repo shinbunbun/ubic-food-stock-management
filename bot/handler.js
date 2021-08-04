@@ -39,7 +39,8 @@ module.exports.index = (event, context) => {
       if (message !== undefined) {
         console.log(`message: ${JSON.stringify(message)}`);
         client.replyMessage(e.replyToken, message)
-          .then(() => {
+          .then((response) => {
+            console.log(`response: ${response}`);
             const lambdaResponse = {
               statusCode: 200,
               headers: {
