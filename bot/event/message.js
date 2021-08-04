@@ -1,9 +1,12 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 const AWS = require('aws-sdk');
+// eslint-disable-next-line import/no-extraneous-dependencies
+const axios = require('axios');
 // eslint-disable-next-line import/no-unresolved
 const { v4: uuidv4 } = require('uuid');
 
 const dynamoDocument = new AWS.DynamoDB.DocumentClient();
+const s3 = new AWS.S3();
 
 // テキストメッセージの処理をする関数
 const textEvent = async (event) => {
@@ -70,7 +73,7 @@ const textEvent = async (event) => {
           hero: {
             type: 'image',
             url: foods[foodIds[i]]['food-image'],
-            size: 'xl',
+            size: 'full',
           },
           body: {
             type: 'box',
@@ -79,7 +82,7 @@ const textEvent = async (event) => {
               {
                 type: 'text',
                 text: foods[foodIds[i]]['food-name'],
-                size: 'xl',
+                size: 'full',
                 weight: 'bold',
                 align: 'center',
               },
@@ -217,7 +220,7 @@ const textEvent = async (event) => {
           hero: {
             type: 'image',
             url: 'imageUrl',
-            size: 'xl',
+            size: 'full',
           },
           body: {
             type: 'box',
@@ -226,7 +229,7 @@ const textEvent = async (event) => {
               {
                 type: 'text',
                 text: 'title',
-                size: 'xl',
+                size: 'full',
                 weight: 'bold',
                 align: 'center',
               },
@@ -569,6 +572,13 @@ const textEvent = async (event) => {
             };
             return message;
           }
+          case 'foodImageMode': {
+            message = {
+              type: 'text',
+              text: '食材の画像を送信してください。',
+            };
+            return message;
+          }
           default:
             break;
         }
@@ -585,13 +595,160 @@ const textEvent = async (event) => {
 };
 
 // イメージを処理する関数
-const imageEvent = () => {
-  // 返信するメッセージを作成
+const imageEvent = async (event) => {
+  const messageId = event.message.id;
+  /*   const imageBinary = await client.getMessageContent(messageId);
+  let image = '';
+  // eslint-disable-next-line no-restricted-syntax
+  for await (const chunk of imageBinary) {
+    console.log(chunk);
+    image += chunk;
+  }
+  console.log(image);
+  console.log(Buffer.from(image, 'base64')); */
+  /* console.log(image); */
+  const imageResponse = await axios.get(`https://api-data.line.me/v2/bot/message/${messageId}/content`, { responseType: 'arraybuffer', headers: { Authorization: `Bearer ${process.env.ACCESSTOKEN}` } });
+  console.log(imageResponse.data);
+  const userContextQueryParam = {
+    TableName: 'UBIC-FOOD',
+    ExpressionAttributeNames: {
+      '#i': 'ID',
+      '#d': 'DataType',
+    },
+    ExpressionAttributeValues: {
+      ':id': event.source.userId,
+      ':DataType': 'user-context',
+    },
+    KeyConditionExpression: '#i = :id AND #d = :DataType',
+  };
+  const userContextQueryRes = await new Promise((resolve, reject) => {
+    dynamoDocument.query(userContextQueryParam, (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(data);
+      }
+    });
+  });
+
+  console.log(userContextQueryRes.Items);
+  if (userContextQueryRes.Items[0]) {
+    const dataKind = userContextQueryRes.Items[0].DataKind.split('&');
+    let foodId;
+    dataKind.forEach((dataKindItem) => {
+      if (dataKindItem.match(/foodId/)) {
+        [, foodId] = dataKindItem.split('=');
+      }
+    });
+    const S3UploadParam = {
+      Body: imageResponse.data,
+      Bucket: 'ubic-food-stock-management',
+      Key: [foodId, 'jpeg'].join('.'),
+      ContentType: 'image/jpeg',
+      ACL: 'public-read',
+    };
+    await new Promise((resolve, reject) => {
+      s3.upload(S3UploadParam, (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    });
+    const userContextDeleteParam = {
+      TableName: 'UBIC-FOOD',
+      Key: {
+        ID: event.source.userId,
+        DataType: 'user-context',
+      },
+    };
+    await new Promise((resolve, reject) => {
+      dynamoDocument.delete(userContextDeleteParam, (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    });
+    const foodQueryParam = {
+      TableName: 'UBIC-FOOD',
+      ExpressionAttributeNames: {
+        '#i': 'ID',
+      },
+      ExpressionAttributeValues: {
+        ':id': foodId,
+      },
+      KeyConditionExpression: '#i = :id',
+    };
+    const foodInformation = await new Promise((resolve, reject) => {
+      dynamoDocument.query(foodQueryParam, (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    });
+    let foodName;
+    let foodMaker;
+    foodInformation.Items.forEach((item) => {
+      if (item.DataType === 'food-maker') {
+        foodMaker = item.Data;
+      } else if (item.DataType === 'food-name') {
+        foodName = item.Data;
+      }
+    });
+
+    return [{
+      type: 'text',
+      text: '画像の登録が完了しました！以下の食材が登録されました。',
+    }, {
+      type: 'flex',
+      altText: '追加された食材',
+      contents: {
+        type: 'bubble',
+        header: {
+          type: 'box',
+          layout: 'vertical',
+          contents: [],
+        },
+        hero: {
+          type: 'image',
+          url: `https://ubic-food-stock-management.s3.ap-northeast-1.amazonaws.com/${foodId}.jpeg`,
+          size: 'full',
+        },
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          contents: [
+            {
+              type: 'text',
+              text: foodName,
+              size: 'full',
+              weight: 'bold',
+              align: 'center',
+            },
+            {
+              type: 'text',
+              text: foodMaker,
+              align: 'center',
+            },
+          ],
+        },
+        styles: {
+          header: {
+            backgroundColor: '#008282',
+          },
+        },
+      },
+    }];
+  }
   const message = {
     type: 'text',
-    text: '画像を受け取りました！',
+    text: '食料の登録をしたい場合は、「食料追加」と送信してください。',
   };
-  // 関数の呼び出し元（index）に返信するメッセージを返す
   return message;
 };
 
@@ -609,7 +766,7 @@ exports.index = (event, client) => {
     case 'image': {
       // イメージの場合はimageEventを呼び出す
       // 実行結果をmessageに格納する
-      message = imageEvent();
+      message = imageEvent(event, client);
       break;
     }
     // それ以外の場合
