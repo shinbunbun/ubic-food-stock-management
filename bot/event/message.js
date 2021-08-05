@@ -566,7 +566,7 @@ const textEvent = async (event) => {
                     Item: {
                       ID: foodId,
                       DataType: 'food-stock',
-                      IntData: 0,
+                      IntData: 1,
                       DataKind: 'food',
                     },
                   },
