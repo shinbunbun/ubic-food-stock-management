@@ -160,6 +160,7 @@ const textEvent = async (event) => {
       /* console.log(foods); */
       break;
     }
+    case '貸出中の食料':
     case '返却': {
       message = [{
         type: 'text',
@@ -172,6 +173,18 @@ const textEvent = async (event) => {
           contents: [],
         },
       }];
+      switch (event.message.text) {
+        case '貸出中の食料':
+          message[0].text = '貸出中の食料です';
+          message[1].altText = '貸出中の食料です';
+          break;
+        case '返却':
+          message[0].text = '返却する商品を選んでください';
+          message[1].altText = '返却する商品を選んでください';
+          break;
+        default:
+          break;
+      }
       const queryParam = {
         TableName: 'UBIC-FOOD',
         IndexName: 'Data-DataType-index',
