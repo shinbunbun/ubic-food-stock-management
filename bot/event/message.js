@@ -24,7 +24,7 @@ const textEvent = async (event) => {
     }
     case '在庫一覧':
     case '借りる':
-    case '補充': {
+    case '在庫補充': {
       const queryParam = {
         TableName: 'UBIC-FOOD',
         IndexName: 'DataKind-index',
@@ -177,7 +177,7 @@ const textEvent = async (event) => {
       /* console.log(foods); */
       break;
     }
-    case '貸出中の食料':
+    case 'マイリスト':
     case '返却': {
       message = [{
         type: 'text',
@@ -364,7 +364,7 @@ const textEvent = async (event) => {
       }
       break;
     }
-    case '食料追加': {
+    case '在庫追加': {
       const { userId } = event.source;
       const updateParam = {
         TableName: 'UBIC-FOOD',
