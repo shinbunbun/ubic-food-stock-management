@@ -530,6 +530,40 @@ const textEvent = async (event) => {
         return message;
       }
 
+      if (userMessage.substr(0, 14) === 'replenishment:') {
+        const foodId = userMessage.substr(14);
+        const userContextUpdateParam = {
+          TableName: 'UBIC-FOOD',
+          Key: { // 更新したい項目をプライマリキー(及びソートキー)によって１つ指定
+            ID: event.source.userId,
+            DataType: 'user-context',
+          },
+          ExpressionAttributeNames: {
+            '#d': 'Data',
+            '#k': 'DataKind',
+          },
+          ExpressionAttributeValues: {
+            ':Data': 'foodReplenishmentMode',
+            ':DataKind': `user&foodId=${foodId}`,
+          },
+          UpdateExpression: 'SET #d = :Data, #k = :DataKind',
+        };
+        await new Promise((resolve, reject) => {
+          dynamoDocument.update(userContextUpdateParam, (err, data) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(data);
+            }
+          });
+        });
+        message = {
+          type: 'text',
+          text: '補充する個数を半角数字で入力してください',
+        };
+        return message;
+      }
+
       const userContextQueryParam = {
         TableName: 'UBIC-FOOD',
         ExpressionAttributeNames: {
