@@ -232,6 +232,12 @@ const textEvent = async (event) => {
         }));
       }
       const foodIdsQueryRes = await Promise.all(foodIdsPromise);
+      if (!foodIdsQueryRes[0]) {
+        return {
+          type: 'text',
+          text: '現在貸出中の食料はありません',
+        };
+      }
       console.log(foodIdsQueryRes[0].Items[0]);
       const foodItemsPromise = [];
       for (let i = 0; i < foodIdsQueryRes.length; i += 1) {
