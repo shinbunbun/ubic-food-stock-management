@@ -54,7 +54,7 @@ const textEvent = async (event) => {
           foods[foodItem.ID] = {};
           foodIds.push(foodItem.ID);
         }
-        if (foodItem.IntData) {
+        if (foodItem.IntData !== undefined) {
           foods[foodItem.ID][foodItem.DataType] = foodItem.IntData;
         } else {
           foods[foodItem.ID][foodItem.DataType] = foodItem.Data;
@@ -83,7 +83,7 @@ const textEvent = async (event) => {
           break;
       }
       for (let i = 0; i < foodIds.length; i += 1) {
-        message.contents.contents.push({
+        const messageContent = {
           type: 'bubble',
           header: {
             type: 'box',
@@ -155,7 +155,12 @@ const textEvent = async (event) => {
               backgroundColor: '#008282',
             },
           },
-        });
+        };
+        if (foods[foodIds[i]]['food-stock'] === 0) {
+          messageContent.body.contents[3].contents[1].style = 'secondary';
+          messageContent.body.contents[3].contents[1].action.text = '在庫切れ';
+        }
+        message.contents.contents.push(messageContent);
       }
       /* console.log(foods); */
       break;
