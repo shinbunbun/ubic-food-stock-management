@@ -773,6 +773,22 @@ const textEvent = async (event) => {
                 }
               });
             });
+            const userContextDeleteParam = {
+              TableName: 'UBIC-FOOD',
+              Key: {
+                ID: event.source.userId,
+                DataType: 'user-context',
+              },
+            };
+            await new Promise((resolve, reject) => {
+              dynamoDocument.delete(userContextDeleteParam, (err, data) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(data);
+                }
+              });
+            });
             message = {
               type: 'text',
               text: '在庫の追加が完了しました！',
