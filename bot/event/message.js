@@ -60,14 +60,17 @@ const textEvent = async (event) => {
           foods[foodItem.ID][foodItem.DataType] = foodItem.Data;
         }
       }
-      message = {
-        type: 'flex',
-        altText: 'altText',
-        contents: {
-          type: 'carousel',
-          contents: [],
-        },
-      };
+      message = [];
+      for (let i = 0; i < Math.ceil(foodIds.length / 10); i += 1) {
+        message.push({
+          type: 'flex',
+          altText: 'altText',
+          contents: {
+            type: 'carousel',
+            contents: [],
+          },
+        });
+      }
       switch (event.message.text) {
         case '在庫一覧':
           message.altText = '在庫一覧';
@@ -105,11 +108,13 @@ const textEvent = async (event) => {
                 size: 'xl',
                 weight: 'bold',
                 align: 'center',
+                wrap: true,
               },
               {
                 type: 'text',
                 text: foods[foodIds[i]]['food-maker'],
                 align: 'center',
+                wrap: true,
               },
               {
                 type: 'separator',
@@ -160,7 +165,7 @@ const textEvent = async (event) => {
           messageContent.body.contents[3].contents[1].style = 'secondary';
           messageContent.body.contents[3].contents[1].action.text = '在庫切れ';
         }
-        message.contents.contents.push(messageContent);
+        message[Math.floor(i / 10)].contents.contents.push(messageContent);
       }
       /* console.log(foods); */
       break;
@@ -292,11 +297,13 @@ const textEvent = async (event) => {
                 size: 'xl',
                 weight: 'bold',
                 align: 'center',
+                wrap: true,
               },
               {
                 type: 'text',
                 text: 'maker',
                 align: 'center',
+                wrap: true,
               },
               {
                 type: 'separator',
