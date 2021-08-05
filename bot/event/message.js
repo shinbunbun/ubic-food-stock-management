@@ -304,7 +304,7 @@ const textEvent = async (event) => {
       const { userId } = event.source;
       const updateParam = {
         TableName: 'UBIC-FOOD',
-        Key: { // 更新したい項目をプライマリキー(及びソートキー)によって１つ指定
+        Key: {
           ID: userId,
           DataType: 'user-context',
         },
@@ -336,6 +336,7 @@ const textEvent = async (event) => {
     // 上で条件分岐した以外のメッセージが送られてきた時
     default: {
       const userMessage = event.message.text;
+
       if (userMessage.substr(0, 5) === 'rent:') {
         const transactionId = uuidv4();
         /* console.log(transactionId); */
@@ -410,8 +411,57 @@ const textEvent = async (event) => {
           text: `貸し出し完了しました。返却期限は${deadLine.getMonth() + 1}/${deadLine.getDate()}です`,
         };
         return message;
-      } if (userMessage.substr(0, 7) === 'return:') {
+      }
+
+      if (userMessage.substr(0, 7) === 'return:') {
         const transactionId = userMessage.substr(7);
+
+        const foodQueryParam = {
+          TableName: 'UBIC-FOOD',
+          ExpressionAttributeNames: {
+            '#i': 'ID',
+            '#d': 'DataType',
+          },
+          ExpressionAttributeValues: {
+            ':id': transactionId,
+            ':DataType': 'transaction-food',
+          },
+          KeyConditionExpression: '#i = :id AND #d = :DataType',
+        };
+        const foodInformation = await new Promise((resolve, reject) => {
+          dynamoDocument.query(foodQueryParam, (err, data) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(data);
+            }
+          });
+        });
+
+        const stockCountUpdateParam = {
+          TableName: 'UBIC-FOOD',
+          Key: {
+            ID: foodInformation.Items[0].Data,
+            DataType: 'food-stock',
+          },
+          ExpressionAttributeNames: {
+            '#d': 'IntData',
+          },
+          ExpressionAttributeValues: {
+            ':IntData': 1,
+          },
+          UpdateExpression: 'SET #d = #d + :IntData',
+        };
+        await new Promise((resolve, reject) => {
+          dynamoDocument.update(stockCountUpdateParam, (err, data) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(data);
+            }
+          });
+        });
+
         const deleteParam = {
           RequestItems: {
             'UBIC-FOOD': [{
@@ -476,6 +526,7 @@ const textEvent = async (event) => {
         });
       });
       console.log(userContextQueryRes.Items);
+
       if (userContextQueryRes.Items[0]) {
         const context = userContextQueryRes.Items[0].Data;
         switch (context) {
