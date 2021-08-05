@@ -91,7 +91,14 @@ const textEvent = async (event) => {
           header: {
             type: 'box',
             layout: 'vertical',
-            contents: [],
+            contents: [
+              {
+                type: 'text',
+                text: `${i + 1}/${foodIds.length}`,
+                color: '#ffffff',
+                weight: 'regular',
+              },
+            ],
           },
           hero: {
             type: 'image',
