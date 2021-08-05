@@ -742,6 +742,43 @@ const textEvent = async (event) => {
             };
             return message;
           }
+          case 'foodReplenishmentMode': {
+            const dataKind = userContextQueryRes.Items[0].DataKind.split('&');
+            let foodId;
+            dataKind.forEach((dataKindItem) => {
+              if (dataKindItem.match(/foodId/)) {
+                [, foodId] = dataKindItem.split('=');
+              }
+            });
+            const stockCountUpdateParam = {
+              TableName: 'UBIC-FOOD',
+              Key: {
+                ID: foodId,
+                DataType: 'food-stock',
+              },
+              ExpressionAttributeNames: {
+                '#d': 'IntData',
+              },
+              ExpressionAttributeValues: {
+                ':IntData': Number(event.message.text),
+              },
+              UpdateExpression: 'SET #d = #d + :IntData',
+            };
+            await new Promise((resolve, reject) => {
+              dynamoDocument.update(stockCountUpdateParam, (err, data) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(data);
+                }
+              });
+            });
+            message = {
+              type: 'text',
+              text: '在庫の追加が完了しました！',
+            };
+            return message;
+          }
           default:
             break;
         }
