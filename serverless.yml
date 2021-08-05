@@ -20,8 +20,7 @@ resources:
         Bucket:
           Type: AWS::S3::Bucket
           Properties:
-            # バケット名
-            BucketName: ubic-food-stock-management
+            BucketName: ${self:custom.environment.S3BUCKET}
         UBICFOOD:
           Type: AWS::DynamoDB::Table
           Properties:

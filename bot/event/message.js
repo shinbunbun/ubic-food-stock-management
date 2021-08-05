@@ -670,7 +670,7 @@ const textEvent = async (event) => {
                     Item: {
                       ID: foodId,
                       DataType: 'food-image',
-                      Data: 'https://ubic-food-stock-management.s3.ap-northeast-1.amazonaws.com/bbc366b61cd386e32143ebafbc3f49ec.png',
+                      Data: `https://${process.env.S3BUCKET}.s3.ap-northeast-1.amazonaws.com/bbc366b61cd386e32143ebafbc3f49ec.png`,
                       DataKind: 'food',
                     },
                   },
@@ -911,7 +911,7 @@ const imageEvent = async (event) => {
     });
     const S3UploadParam = {
       Body: imageResponse.data,
-      Bucket: 'ubic-food-stock-management',
+      Bucket: process.env.S3BUCKET,
       Key: [foodId, 'jpeg'].join('.'),
       ContentType: 'image/jpeg',
       ACL: 'public-read',
@@ -935,7 +935,7 @@ const imageEvent = async (event) => {
         '#d': 'Data',
       },
       ExpressionAttributeValues: {
-        ':Data': `https://ubic-food-stock-management.s3.ap-northeast-1.amazonaws.com/${foodId}.jpeg`,
+        ':Data': `https://${process.env.S3BUCKET}.s3.ap-northeast-1.amazonaws.com/${foodId}.jpeg`,
       },
       UpdateExpression: 'SET #d = :Data',
     };
@@ -1008,7 +1008,7 @@ const imageEvent = async (event) => {
         },
         hero: {
           type: 'image',
-          url: `https://ubic-food-stock-management.s3.ap-northeast-1.amazonaws.com/${foodId}.jpeg`,
+          url: `https://${process.env.S3BUCKET}.s3.ap-northeast-1.amazonaws.com/${foodId}.jpeg`,
           size: 'full',
         },
         body: {
