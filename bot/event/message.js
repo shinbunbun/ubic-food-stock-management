@@ -22,7 +22,9 @@ const textEvent = async (event) => {
       };
       break;
     }
-    case '借りる': {
+    case '在庫一覧':
+    case '借りる':
+    case '補充': {
       const queryParam = {
         TableName: 'UBIC-FOOD',
         IndexName: 'DataKind-index',
@@ -60,12 +62,26 @@ const textEvent = async (event) => {
       }
       message = {
         type: 'flex',
-        altText: '借りる食材を選んでください',
+        altText: 'altText',
         contents: {
           type: 'carousel',
           contents: [],
         },
       };
+      switch (event.message.text) {
+        case '在庫一覧':
+          message.altText = '在庫一覧';
+          break;
+        case '借りる':
+          message.altText = '借りる食材を選んでください';
+          break;
+        case '補充':
+          message.altText = '補充する食材をえらんでください';
+          break;
+
+        default:
+          break;
+      }
       for (let i = 0; i < foodIds.length; i += 1) {
         message.contents.contents.push({
           type: 'bubble',
@@ -118,6 +134,16 @@ const textEvent = async (event) => {
                     },
                     style: 'primary',
                     offsetBottom: '10px',
+                  },
+                  {
+                    type: 'button',
+                    action: {
+                      type: 'message',
+                      label: '補充する',
+                      text: `replenishment:${foodIds[i]}`,
+                    },
+                    style: 'primary',
+                    color: '#25b7c0',
                   },
                 ],
                 paddingTop: '30px',
