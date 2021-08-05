@@ -22,9 +22,7 @@ const textEvent = async (event) => {
       };
       break;
     }
-    case '在庫一覧':
-    case '借りる':
-    case '在庫補充': {
+    case '在庫一覧': {
       const queryParam = {
         TableName: 'UBIC-FOOD',
         IndexName: 'DataKind-index',
@@ -60,14 +58,75 @@ const textEvent = async (event) => {
           foods[foodItem.ID][foodItem.DataType] = foodItem.Data;
         }
       }
-      message = [];
-      for (let i = 0; i < Math.ceil(foodIds.length / 10); i += 1) {
-        message.push({
-          type: 'flex',
-          altText: 'altText',
-          contents: {
-            type: 'carousel',
+      message = [{
+        type: 'flex',
+        altText: 'altText',
+        contents: {
+          type: 'carousel',
+          contents: [],
+        },
+      }, {
+        type: 'flex',
+        altText: 'altText',
+        contents: {
+          type: 'bubble',
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'button',
+                style: 'primary',
+                height: 'md',
+                action: {
+                  type: 'message',
+                  label: '借りる',
+                  text: '借りる',
+                },
+                margin: '10px',
+              },
+              {
+                type: 'button',
+                style: 'primary',
+                height: 'md',
+                action: {
+                  type: 'message',
+                  label: '補充する',
+                  text: '在庫補充',
+                },
+                color: '#25b7c0',
+                margin: '10px',
+              },
+            ],
+            flex: 0,
+          },
+        },
+      }];
+      for (let i = 0; i < Math.ceil(foodIds.length / 7); i += 1) {
+        message[0].contents.contents.push({
+          type: 'bubble',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'text',
+                text: '在庫一覧',
+                color: '#ffffff',
+                weight: 'regular',
+              },
+            ],
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
             contents: [],
+          },
+          styles: {
+            header: {
+              backgroundColor: '#008282',
+            },
           },
         });
       }
@@ -87,92 +146,29 @@ const textEvent = async (event) => {
       }
       for (let i = 0; i < foodIds.length; i += 1) {
         const messageContent = {
-          type: 'bubble',
-          header: {
-            type: 'box',
-            layout: 'vertical',
-            contents: [
-              {
-                type: 'text',
-                text: `${i + 1}/${foodIds.length}`,
-                color: '#ffffff',
-                weight: 'regular',
-              },
-            ],
-          },
-          hero: {
-            type: 'image',
-            url: foods[foodIds[i]]['food-image'],
-            size: 'full',
-          },
-          body: {
-            type: 'box',
-            layout: 'vertical',
-            contents: [
-              {
-                type: 'text',
-                text: foods[foodIds[i]]['food-name'],
-                size: 'xl',
-                weight: 'bold',
-                align: 'center',
-                wrap: true,
-              },
-              {
-                type: 'text',
-                text: foods[foodIds[i]]['food-maker'],
-                align: 'center',
-                wrap: true,
-              },
-              {
-                type: 'separator',
-                margin: 'md',
-              },
-              {
-                type: 'box',
-                layout: 'vertical',
-                contents: [
-                  {
-                    type: 'text',
-                    text: `在庫: ${foods[foodIds[i]]['food-stock']}個`,
-                    offsetBottom: '15px',
-                    align: 'center',
-                  },
-                  {
-                    type: 'button',
-                    action: {
-                      type: 'message',
-                      label: '借りる',
-                      text: `rent:${foodIds[i]}`,
-                    },
-                    style: 'primary',
-                    offsetBottom: '10px',
-                  },
-                  {
-                    type: 'button',
-                    action: {
-                      type: 'message',
-                      label: '補充する',
-                      text: `replenishment:${foodIds[i]}`,
-                    },
-                    style: 'primary',
-                    color: '#25b7c0',
-                  },
-                ],
-                paddingTop: '30px',
-              },
-            ],
-          },
-          styles: {
-            header: {
-              backgroundColor: '#008282',
+          type: 'box',
+          layout: 'horizontal',
+          contents: [
+            {
+              type: 'text',
+              text: foods[foodIds[i]]['food-name'],
+              wrap: true,
+              offsetTop: 'md',
             },
-          },
+            {
+              type: 'text',
+              text: foods[foodIds[i]]['food-stock'].toString(),
+              align: 'end',
+              offsetTop: 'md',
+            },
+          ],
+          paddingBottom: '10px',
         };
-        if (foods[foodIds[i]]['food-stock'] === 0) {
-          messageContent.body.contents[3].contents[1].style = 'secondary';
-          messageContent.body.contents[3].contents[1].action.text = '在庫切れ';
-        }
-        message[Math.floor(i / 10)].contents.contents.push(messageContent);
+        message[0].contents.contents[Math.floor(i / 7)].body.contents.push(messageContent);
+        message[0].contents.contents[Math.floor(i / 7)].body.contents.push({
+          type: 'separator',
+          margin: 'sm',
+        });
       }
       /* console.log(foods); */
       break;
