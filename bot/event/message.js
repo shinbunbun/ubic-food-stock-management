@@ -1158,12 +1158,11 @@ const imageEvent = async (event) => {
       TableName: 'UBIC-FOOD',
       ExpressionAttributeNames: {
         '#i': 'ID',
-        '#d': 'Data',
       },
       ExpressionAttributeValues: {
         ':id': foodId,
       },
-      KeyConditionExpression: 'contains (#i, :id)',
+      KeyConditionExpression: '#i = :id',
     };
     const foodInformation = await new Promise((resolve, reject) => {
       dynamoDocument.query(foodQueryParam, (err, data) => {
