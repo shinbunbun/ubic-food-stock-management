@@ -65,7 +65,7 @@ const textEvent = async (event) => {
           type: 'carousel',
           contents: [],
         },
-      }, {
+      }, /* {
         type: 'flex',
         altText: 'altText',
         contents: {
@@ -102,7 +102,7 @@ const textEvent = async (event) => {
             flex: 0,
           },
         },
-      }];
+      } */];
       for (let i = 0; i < Math.ceil(foodIds.length / 7); i += 1) {
         message[0].contents.contents.push({
           type: 'bubble',
@@ -173,6 +173,7 @@ const textEvent = async (event) => {
       /* console.log(foods); */
       break;
     }
+    case '在庫補充':
     case '借りる': {
       const userContextUpdateParam = {
         TableName: 'UBIC-FOOD',
@@ -185,7 +186,7 @@ const textEvent = async (event) => {
           '#k': 'DataKind',
         },
         ExpressionAttributeValues: {
-          ':Data': 'rentFood',
+          ':Data': 'rentOrReplenishmentFood',
           ':DataKind': 'user',
         },
         UpdateExpression: 'SET #d = :Data, #k = :DataKind',
@@ -201,7 +202,7 @@ const textEvent = async (event) => {
       });
       message = [{
         type: 'text',
-        text: '借りたい食料の名前を送信してください（部分一致検索）。',
+        text: '食料の名前を送信してください（部分一致検索）。',
       }];
       break;
     }
@@ -876,6 +877,167 @@ const textEvent = async (event) => {
             };
             return message;
           }
+          case 'rentOrReplenishmentFood': {
+            /* Todo: 関数化 */
+            const queryParam = {
+              TableName: 'UBIC-FOOD',
+              IndexName: 'DataKind-index',
+              KeyConditionExpression: '#k = :val',
+              ExpressionAttributeValues: {
+                ':val': 'food',
+              },
+              ExpressionAttributeNames: {
+                '#k': 'DataKind',
+              },
+            };
+            const foodData = await new Promise((resolve, reject) => {
+              dynamoDocument.query(queryParam, (err, data) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(data);
+                }
+              });
+            });
+            const foodDataItems = foodData.Items;
+            const foods = {};
+            const foodIds = [];
+            for (let i = 0; i < foodDataItems.length; i += 1) {
+              const foodItem = foodDataItems[i];
+              if (foodItem.Data) {
+                if (foodItem.Data.indexOf(event.message.text) > -1 && !foods[foodItem.ID]) {
+                  foods[foodItem.ID] = {};
+                  foodIds.push(foodItem.ID);
+                }
+              }
+            }
+            console.log(foodIds);
+            for (let i = 0; i < foodDataItems.length; i += 1) {
+              const foodItem = foodDataItems[i];
+              if (foodIds.find((element) => element === foodItem.ID)) {
+                if (foodItem.IntData !== undefined) {
+                  foods[foodItem.ID][foodItem.DataType] = foodItem.IntData;
+                } else {
+                  foods[foodItem.ID][foodItem.DataType] = foodItem.Data;
+                }
+              }
+            }
+            console.log(foods);
+            message = {
+              type: 'flex',
+              altText: '借りる',
+              contents: {
+                type: 'carousel',
+                contents: [],
+              },
+            };
+            for (let i = 0; i < foodIds.length; i += 1) {
+              const messageContent = {
+                type: 'bubble',
+                header: {
+                  type: 'box',
+                  layout: 'vertical',
+                  contents: [
+                    {
+                      type: 'text',
+                      text: `${i + 1}/${foodIds.length}`,
+                      color: '#ffffff',
+                      weight: 'regular',
+                    },
+                  ],
+                },
+                hero: {
+                  type: 'image',
+                  url: foods[foodIds[i]]['food-image'],
+                  size: 'full',
+                },
+                body: {
+                  type: 'box',
+                  layout: 'vertical',
+                  contents: [
+                    {
+                      type: 'text',
+                      text: foods[foodIds[i]]['food-name'],
+                      size: 'xl',
+                      weight: 'bold',
+                      align: 'center',
+                      wrap: true,
+                    },
+                    {
+                      type: 'text',
+                      text: foods[foodIds[i]]['food-maker'],
+                      align: 'center',
+                      wrap: true,
+                    },
+                    {
+                      type: 'separator',
+                      margin: 'md',
+                    },
+                    {
+                      type: 'box',
+                      layout: 'vertical',
+                      contents: [
+                        {
+                          type: 'text',
+                          text: `在庫: ${foods[foodIds[i]]['food-stock']}個`,
+                          offsetBottom: '15px',
+                          align: 'center',
+                        },
+                        {
+                          type: 'button',
+                          action: {
+                            type: 'message',
+                            label: '借りる',
+                            text: `rent:${foodIds[i]}`,
+                          },
+                          style: 'primary',
+                          offsetBottom: '10px',
+                        },
+                        {
+                          type: 'button',
+                          action: {
+                            type: 'message',
+                            label: '補充する',
+                            text: `replenishment:${foodIds[i]}`,
+                          },
+                          style: 'primary',
+                          color: '#25b7c0',
+                        },
+                      ],
+                      paddingTop: '30px',
+                    },
+                  ],
+                },
+                styles: {
+                  header: {
+                    backgroundColor: '#008282',
+                  },
+                },
+              };
+              if (foods[foodIds[i]]['food-stock'] === 0) {
+                messageContent.body.contents[3].contents[1].style = 'secondary';
+                messageContent.body.contents[3].contents[1].action.text = '在庫切れ';
+              }
+              message.contents.contents.push(messageContent);
+            }
+            const userContextDeleteParam = {
+              TableName: 'UBIC-FOOD',
+              Key: {
+                ID: event.source.userId,
+                DataType: 'user-context',
+              },
+            };
+            await new Promise((resolve, reject) => {
+              dynamoDocument.delete(userContextDeleteParam, (err, data) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(data);
+                }
+              });
+            });
+            return message;
+          }
           default:
             break;
         }
@@ -996,11 +1158,12 @@ const imageEvent = async (event) => {
       TableName: 'UBIC-FOOD',
       ExpressionAttributeNames: {
         '#i': 'ID',
+        '#d': 'Data',
       },
       ExpressionAttributeValues: {
         ':id': foodId,
       },
-      KeyConditionExpression: '#i = :id',
+      KeyConditionExpression: 'contains (#i, :id)',
     };
     const foodInformation = await new Promise((resolve, reject) => {
       dynamoDocument.query(foodQueryParam, (err, data) => {
