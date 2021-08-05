@@ -173,6 +173,38 @@ const textEvent = async (event) => {
       /* console.log(foods); */
       break;
     }
+    case '借りる': {
+      const userContextUpdateParam = {
+        TableName: 'UBIC-FOOD',
+        Key: { // 更新したい項目をプライマリキー(及びソートキー)によって１つ指定
+          ID: event.source.userId,
+          DataType: 'user-context',
+        },
+        ExpressionAttributeNames: {
+          '#d': 'Data',
+          '#k': 'DataKind',
+        },
+        ExpressionAttributeValues: {
+          ':Data': 'rentFood',
+          ':DataKind': 'user',
+        },
+        UpdateExpression: 'SET #d = :Data, #k = :DataKind',
+      };
+      await new Promise((resolve, reject) => {
+        dynamoDocument.update(userContextUpdateParam, (err, data) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
+        });
+      });
+      message = [{
+        type: 'text',
+        text: '借りたい食料の名前を送信してください（部分一致検索）。',
+      }];
+      break;
+    }
     case 'マイリスト':
     case '返却': {
       message = [{
