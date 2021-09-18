@@ -54,7 +54,8 @@ module.exports.index = async (event) => {
   const foodsList = [];
   for (let i = 0; i < foodIds.length; i += 1) {
     foodsList.push({
-      [foods[foodIds[i]]['food-name']]: foods[foodIds[i]]['food-stock'].toString(),
+      name: foods[foodIds[i]]['food-name'],
+      stock: foods[foodIds[i]]['food-stock'].toString(),
     });
   }
   response.body = JSON.stringify({
