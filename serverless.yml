@@ -45,3 +45,7 @@ functions:
     events:
       - http: POST bot
     environment: ${self:custom.environment}
+  stock:
+   handler: stock/handler.index
+   events:
+    - http: GET stock
