@@ -49,3 +49,8 @@ functions:
    handler: stock/handler.index
    events:
     - http: GET stock
+  transaction:
+    handler: transaction/handler.index
+    events:
+      - http: GET transaction
+    environment: ${self:custom.environment}

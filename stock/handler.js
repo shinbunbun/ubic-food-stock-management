@@ -54,7 +54,10 @@ module.exports.index = async (event) => {
   const foodsList = [];
   for (let i = 0; i < foodIds.length; i += 1) {
     foodsList.push({
+      id: foodIds[i],
       name: foods[foodIds[i]]['food-name'],
+      maker: foods[foodIds[i]]['food-maker'],
+      image: foods[foodIds[i]]['food-image'],
       stock: foods[foodIds[i]]['food-stock'].toString(),
     });
   }
