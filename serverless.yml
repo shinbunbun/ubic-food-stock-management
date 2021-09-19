@@ -53,4 +53,8 @@ functions:
     handler: transaction/handler.index
     events:
       - http: GET transaction
+  user:
+    handler: user/handler.index
+    events:
+      - http: GET user
     environment: ${self:custom.environment}

@@ -1,11 +1,11 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 const AWS = require('aws-sdk');
-const line = require('@line/bot-sdk');
+/* const line = require('@line/bot-sdk'); */
 
 const dynamoDocument = new AWS.DynamoDB.DocumentClient();
-const client = new line.Client({
+/* const client = new line.Client({
   channelAccessToken: process.env.ACCESSTOKEN,
-});
+}); */
 class Response {
   constructor() {
     this.statusCode = '';
@@ -59,7 +59,7 @@ module.exports.index = async (event) => {
   console.log(userData); */
   for (let i = 0; i < transactionIds.length; i += 1) {
     transactionsList.push({
-      id: transactionIds[i],
+      transactionId: transactionIds[i],
       date: transactions[transactionIds[i]]['transaction-date'],
       /*       userData: userData[i], */
       foodId: transactions[transactionIds[i]]['transaction-food'],
