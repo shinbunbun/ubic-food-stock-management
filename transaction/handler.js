@@ -63,6 +63,7 @@ module.exports.index = async (event) => {
       date: transactions[transactionIds[i]]['transaction-date'],
       /*       userData: userData[i], */
       foodId: transactions[transactionIds[i]]['transaction-food'],
+      userId: transactions[transactionIds[i]]['transaction-user'],
     });
   }
 
